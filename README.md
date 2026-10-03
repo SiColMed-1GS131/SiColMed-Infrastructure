@@ -176,6 +176,3 @@ Los repositorios son **públicos**. Por eso:
 | VS Code marca imports como "module not found" | El editor no ve las librerías que están en Docker. Crea un `.venv` local, instala `requirements.txt` y elígelo con *Python: Select Interpreter* |
 | La web no muestra datos de la API | Revisa `docker compose logs api` y que `/health/db` responda |
 
-## 13. Documentación adicional
-
-La carpeta `docs/` guardará los diagramas del proyecto (modelo entidad-relación, arquitectura y casos de uso), hechos con draw.io o PlantUML.
