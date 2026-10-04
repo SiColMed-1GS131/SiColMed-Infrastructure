@@ -1,3 +1,4 @@
+name: sicolmed
 services:
   db:
     image: postgres:16-alpine
@@ -32,8 +33,10 @@ services:
 
   web:
     build: ../SiColMed-FrontEnd
+    environment:
+      API_URL: http://api:8000
     volumes:
-      - ../SiColMed-FrontEnd/src:/usr/share/nginx/html:ro
+      - ../SiColMed-FrontEnd/src:/var/www/html
     ports:
       - "3000:80"
     depends_on:
