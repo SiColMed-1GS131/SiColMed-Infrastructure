@@ -2,7 +2,7 @@
 
 Sistema de manejo de certificaciones y recertificaciones de médicos en Panamá (Desarrollo de Software III).
 
-Este repositorio (`SiColMed-Deploy`) contiene lo necesario para levantar **todo el sistema con un solo comando**: base de datos, API y web.
+Este repositorio (`SiColMed-Infrastructure`) contiene lo necesario para levantar **todo el sistema con un solo comando**: base de datos, API y web.
 
 ## 1. Repositorios
 
@@ -10,7 +10,7 @@ Este repositorio (`SiColMed-Deploy`) contiene lo necesario para levantar **todo 
 |---|---|
 | `SiColMed-BackEnd` | API en Python 3.12 + FastAPI, con su Dockerfile |
 | `SiColMed-FrontEnd` | Web en PHP, HTML, CSS y JavaScript, con su Dockerfile |
-| `SiColMed-Deploy` | `docker-compose.yml`, `.env.example` y esta documentación |
+| `SiColMed-Infrastructure` | `docker-compose.yml`, `.env.example` y esta documentación |
 
 ## 2. Herramientas
 
@@ -42,12 +42,12 @@ Las carpetas deben quedar **como hermanas y con estos nombres exactos**, porque 
 SiColMed/
 ├── SiColMed-BackEnd/
 ├── SiColMed-FrontEnd/
-└── SiColMed-Deploy/
+└── SiColMed-Infrastructure/
 ```
 
 ### 4.2 Crear el archivo `.env`
 
-Dentro de `SiColMed-Deploy`:
+Dentro de `SiColMed-Infrastructure`:
 
 ```bash
 cp .env.example .env          # Linux, Mac o WSL
