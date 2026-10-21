@@ -1,4 +1,5 @@
 name: sicolmed
+
 services:
   db:
     image: postgres:16-alpine
@@ -32,11 +33,13 @@ services:
         condition: service_healthy
 
   web:
-    build: ../SiColMed-FrontEnd
+    build:
+      context: ../SiColMed-FrontEnd
+      dockerfile: Dockerfile
     environment:
       API_URL: http://api:8000
     volumes:
-      - ../SiColMed-FrontEnd/src:/var/www/html
+      - ../SiColMed-FrontEnd:/var/www/html
     ports:
       - "3000:80"
     depends_on:
