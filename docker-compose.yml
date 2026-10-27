@@ -23,6 +23,7 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       CORS_ORIGINS: ${CORS_ORIGINS}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?Definir JWT_SECRET_KEY en .env (al menos 32 caracteres)}
       WATCHFILES_FORCE_POLLING: "true"
     volumes:
       - ../SiColMed-BackEnd:/code
