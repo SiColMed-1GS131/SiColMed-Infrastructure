@@ -1,3 +1,4 @@
+
 # SiColMed – Entorno de desarrollo
 
 Sistema de manejo de certificaciones y recertificaciones de médicos en Panamá (Desarrollo de Software III).
@@ -27,8 +28,9 @@ Este repositorio (`SiColMed-Infrastructure`) contiene lo necesario para levantar
 - **Docker Desktop** con el motor WSL 2 activado (Settings → General → *Use the WSL 2 based engine*).
 - **GitHub Desktop** e inicio de sesión con tu cuenta.
 - **Visual Studio Code** (recomendado: extensiones Python, PHP Intelephense y Docker).
+- **Python 3** instalado en tu máquina (fuera de Docker), solo para generar la clave JWT del paso 4.3. Si no tienes Python a mano, puedes usar `openssl rand -base64 32` en su lugar.
 
-No necesitas instalar Python, PHP, PostgreSQL ni XAMPP: todo corre dentro de Docker.
+No necesitas instalar PHP, PostgreSQL ni XAMPP: todo corre dentro de Docker.
 
 ## 4. Instalación
 
@@ -54,15 +56,65 @@ cp .env.example .env          # Linux, Mac o WSL
 copy .env.example .env        # CMD de Windows
 ```
 
-El `.env` es **personal y nunca se sube a GitHub**. Los valores del `.env.example` sirven para desarrollo local sin cambios.
+El `.env` es **personal y nunca se sube a GitHub**. Los valores del `.env.example` sirven para desarrollo local sin cambios, **excepto `JWT_SECRET_KEY`**, que debes generar tú mismo en el siguiente paso.
 
-### 4.3 Levantar el sistema
+### 4.3 Generar la clave JWT
+
+El backend no arranca el login sin una `JWT_SECRET_KEY` de al menos 32 caracteres. Genera una:
+
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(32))"
+```
+
+o, si no tienes Python a mano:
+
+```bash
+openssl rand -base64 32
+```
+
+Copia el resultado y agrégalo a tu `.env` (dentro de `SiColMed-Infrastructure`):
+
+```dotenv
+JWT_SECRET_KEY=<el valor que generaste>
+```
+
+Sin este paso, cualquier intento de login responde `500 Internal Server Error` con `ConfiguracionJWTError`.
+
+### 4.4 Levantar el sistema
 
 ```bash
 docker compose up --build
 ```
 
 La primera vez tarda porque descarga e instala las imágenes.
+
+### 4.5 Aplicar migraciones
+
+La base de datos arranca vacía (0 tablas). Con los contenedores ya corriendo:
+
+```bash
+docker compose exec api alembic upgrade head
+```
+
+Si te saltas este paso, cualquier endpoint falla con errores de tipo `function ... does not exist` o `relation ... does not exist`.
+
+### 4.6 Crear datos de prueba (seed)
+
+Para tener un usuario administrador y dos médicos con los que iniciar sesión:
+
+```bash
+docker compose exec api python -m app.scripts.seed
+```
+
+Es idempotente: puedes correrlo de nuevo sin duplicar usuarios. Credenciales que crea por defecto (pueden sobreescribirse con las variables `DEMO_*` del `.env`):
+
+| Usuario | Correo | Contraseña |
+|---|---|---|
+| Admin | `admin@colmed.dev` | `Admin123!` |
+| Médico 1 | `medico1@colmed.dev` | `Medico123!` |
+| Médico 2 | `medico2@colmed.dev` | `Medico123!` |
+
+Este seed es solo para desarrollo local; cada persona lo corre sobre su propia base, nunca se comparte entre máquinas.
 
 ## 5. Servicios y direcciones
 
@@ -86,6 +138,8 @@ docker compose restart api    # reiniciar solo la API tras cambiar código
 docker compose logs api       # ver los mensajes de un servicio
 docker compose ps             # ver el estado de los servicios
 ```
+
+> ⚠️ **`docker compose down -v` borra todas las tablas, funciones y datos de tu base local**, incluido el seed. Si lo ejecutas por error, repite los pasos 4.5 y 4.6 (`alembic upgrade head` y el seed) antes de poder volver a loguearte — `restart` o `up` sin `--build` **no** recrean la base por sí solos.
 
 Para entrar a la consola de PostgreSQL:
 
@@ -128,7 +182,8 @@ app/
 ├── models/        # Modelo: tablas de la base de datos
 ├── schemas/       # Esquemas Pydantic: forma de los datos de entrada y salida
 ├── routers/       # Controlador: rutas y lógica de cada endpoint
-└── services/      # Lógica de negocio (opcional, si crece)
+├── services/      # Lógica de negocio (opcional, si crece)
+└── scripts/       # Scripts de mantenimiento (ej. seed.py)
 ```
 
 La **Vista** es el frontend, que consume el JSON de la API.
@@ -157,22 +212,29 @@ Quien abre el pull request no lo aprueba por sí mismo.
 Los repositorios son **públicos**. Por eso:
 
 - **Nunca subas el archivo `.env`**, contraseñas, claves ni datos reales de médicos. Si pasa, cambia esas claves de inmediato: borrar el archivo después no basta porque queda en el historial.
-- El `.env.example` solo lleva valores de ejemplo, nunca claves reales.
+- El `.env.example` solo lleva valores de ejemplo, nunca claves reales. `JWT_SECRET_KEY` es la excepción a "sin cambios" del paso 4.2: cada persona debe generar la suya propia, nunca reutilizar una clave vista en otro `.env` o en un chat.
 - Antes de cada commit, revisa en GitHub Desktop la lista de **Changes**.
-- Usa solo datos de prueba ficticios.
+- Usa solo datos de prueba ficticios. Los correos de prueba del seed usan el dominio `@colmed.dev`; evita dominios reservados como `.local`, `.test`, `.example` o `.invalid`, porque el validador de email del backend los rechaza.
 
 ## 12. Problemas comunes
 
 | Síntoma | Causa y solución |
 |---|---|
 | `empty compose file` | El `docker-compose.yml` está vacío o sin guardar. Pega el contenido y guarda con Ctrl+S |
-| `no configuration file provided` | Estás en la carpeta equivocada. Ejecuta los comandos dentro de `SiColMed-Deploy` |
+| `no configuration file provided` | Estás en la carpeta equivocada. Ejecuta los comandos dentro de `SiColMed-Infrastructure` |
 | `invalid tag ... must be lowercase` | Los nombres de imagen de Docker van en minúsculas |
 | `port is already allocated` | Otro programa usa ese puerto. Ciérralo o cambia el mapeo en el compose (por ejemplo `"5433:5432"`) |
 | `password authentication failed` | La base se creó con otra contraseña. Ejecuta `docker compose down -v` y vuelve a levantar |
 | `Field required` / `database_url` | La API no recibió la variable. Revisa que el `.env` exista junto al `docker-compose.yml` |
+| `ConfiguracionJWTError` / `JWT_SECRET_KEY debe tener al menos 32 caracteres` | Falta `JWT_SECRET_KEY` en el `.env`, o se agregó pero el contenedor `api` no se recreó. Genera la clave (paso 4.3), agrégala al `.env`, y corre `docker compose up -d api` (no `restart`: no relee el `.env`) |
+| `function ... does not exist` en cualquier endpoint | La base está vacía o desactualizada. Corre `docker compose exec api alembic upgrade head` |
+| `422 ... special-use or reserved name` al hacer login | El correo usa un dominio reservado (`.local`, `.test`, etc.). Usa `@colmed.dev` o similar en los datos de prueba |
+| No hay usuarios para loguearse | Falta correr el seed: `docker compose exec api python -m app.scripts.seed` |
 | `ImportError` o `Attribute "app" not found` | Un archivo de Python está vacío, sin guardar o con otro contenido. Revísalo y guarda |
 | La API no recarga al guardar | Las carpetas de `/mnt/d/` detectan mal los cambios en WSL. Ejecuta `docker compose restart api` |
 | VS Code marca imports como "module not found" | El editor no ve las librerías que están en Docker. Crea un `.venv` local, instala `requirements.txt` y elígelo con *Python: Select Interpreter* |
 | La web no muestra datos de la API | Revisa `docker compose logs api` y que `/health/db` responda |
-
+```
+- Mención de `.scripts/` en el árbol de la sección 9.
+- Ampliación de la sección 11 (seguridad) sobre `JWT_SECRET_KEY` y dominios de correo.
+- Cuatro filas nuevas en la tabla de problemas comunes (sección 12), con los errores reales que encontraron hoy.
