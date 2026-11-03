@@ -25,6 +25,8 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
       WATCHFILES_FORCE_POLLING: "true"
+      # Sin valor por defecto: si falta en el .env, seed_qa se niega a correr
+      ENVIRONMENT: ${ENVIRONMENT:-}
       DEMO_ADMIN_EMAIL: ${DEMO_ADMIN_EMAIL:-admin@colmed.dev}
       DEMO_ADMIN_PASSWORD: ${DEMO_ADMIN_PASSWORD:-Admin123!}
       DEMO_MEDICO1_EMAIL: ${DEMO_MEDICO1_EMAIL:-medico1@colmed.dev}

@@ -56,6 +56,12 @@ copy .env.example .env        # CMD de Windows
 
 El `.env` es **personal y nunca se sube a GitHub**. Los valores del `.env.example` sirven para desarrollo local sin cambios.
 
+`ENVIRONMENT` controla si se pueden cargar datos de prueba (`python -m app.scripts.seed_qa`):
+
+- Solo se permiten con `development`, `qa` o `test`.
+- Sin la variable, o con cualquier otro valor (incluido `production`), el script se niega a correr.
+- Si tu `.env` es anterior a este cambio, agrégale `ENVIRONMENT=development`.
+
 ### 4.3 Levantar el sistema
 
 ```bash
